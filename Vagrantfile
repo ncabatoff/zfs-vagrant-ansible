@@ -91,7 +91,7 @@ Vagrant.configure("2") do |config|
     create: true, type: "rsync", rsync__exclude: ["**.vdi", ".git"]
 
   # Bootstrap ansible; using ansible_local is an easy OS-neutral way to get python installed.
-  config.vm.provision "init", type: "ansible_local" do |ansible_local|
+  config.vm.provision "init", type: "ansible_local" do |ansible|
     ansible.playbook = "playbook-init.yml"
     ansible.sudo = true
     ansible.install_mode = "pip"
