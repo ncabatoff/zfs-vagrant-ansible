@@ -74,20 +74,34 @@ Vagrant.configure("2") do |config|
 #   end
 # end
 
+  # We don't want the default sync because that will copy our .vdi disks, which is wasteful.
   config.vm.synced_folder ".", "/vagrant", disabled: true
-  config.vm.synced_folder "..", "/root/" + pkgname,
-    create: true, type: "rsync", rsync__args: [
-      "--verbose", "--rsync-path='sudo rsync'", "--archive", "--delete", "-z",
-      "--exclude", "**.vdi"] #,rsync__verbose: true
 
-  # Bootstrap ansible
-  config.vm.provision "init", type: "ansible" do |ansible|
+  # We do still want everything else in this dir sync'd though, so that ansible_local can work.
+  config.vm.synced_folder ".", "/vagrant",
+    create: true, type: "rsync", rsync__exclude: ["**.vdi", ".git"]
+
+  # We also want the parent folder copied.  Since this project is intended as a
+  # convenience for testing my Go ZFS-using projects, we're going to assume
+  # we're deployed as a git submodule of one such project.  To facilitate
+  # iterative testing, this deploys the parent project such that as root with
+  # GOPATH=/root, the project can be built and tests run.  The assumption is
+  # that all dependencies are versioned.
+  config.vm.synced_folder "..", "/root/" + pkgname,
+    create: true, type: "rsync", rsync__exclude: ["**.vdi", ".git"]
+
+  # Bootstrap ansible; using ansible_local is an easy OS-neutral way to get python installed.
+  config.vm.provision "init", type: "ansible_local" do |ansible_local|
     ansible.playbook = "playbook-init.yml"
     ansible.sudo = true
+    ansible.install_mode = "pip"
+    ansible.version = "2.2.1.0"
     #ansible.verbose = '-v'
   end
 
-  # Install ZFS itself and load it.  
+  # Install ZFS itself and load it.  We could use ansible_local again, but I want the playbooks
+  # used in parent projects to be self-contained and vagrant-agnostic, so using the regular
+  # ansible provisioner helps ensure that is possible.
   config.vm.provision "zfs", type: "ansible" do |ansible|
     ansible.playbook = "playbook-zfs.yml"
     ansible.sudo = true

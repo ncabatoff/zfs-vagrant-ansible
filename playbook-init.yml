@@ -7,5 +7,7 @@
   - name: install core python libraries
     raw: dnf install -y python2 python2-dnf libselinux-python
     when: ansible_os_family == "RedHat"
-  - name: install core python libraries
-    raw: ansible-galaxy install gantsign.golang
+
+# If we go back to using ansible_local for later playbooks, we'll need this again.
+# - name: install core python libraries
+#   raw: ansible-galaxy install gantsign.golang
